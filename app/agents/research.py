@@ -20,7 +20,9 @@ RESEARCH_PROMPT = (
     "   - Prefer Excel file download links where available."
     "   - Only return non-Excel download links if Excel is not available."
     "   - If there are mutliple links, return the link to the document that appears to have the most data."
-    "   - Don't return any extra text."
+    "   - Return the response as a string containing only the URL."
+    "   - If any of the inputs are invalid or a candidate URL cannot be found, return an empty text. No explanations necessary."
+    "   - Just return the results; don't return any extra text."
 )
 
 @tool("web_search_serp",
@@ -39,7 +41,8 @@ def serp_tool(country_code:str, year:str) -> list[str]:
 def crawler_tool(url:str) -> list[Any]:
     """Get page contents as markdown"""
     loader = FireCrawlLoader(api_key=config.FIRECRAWL_API_KEY,
-                             url=url, mode="scrape"
+                             url=url,
+                             mode="scrape"
     )
     return loader.load()
 
