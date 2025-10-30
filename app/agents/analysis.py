@@ -15,7 +15,7 @@ ANALYSER_PROMPT = (
 )
 
 @tool("current_datetime", description="Use this tool to get the current date & time.")
-def get_current_datetime():
+def get_current_datetime() -> datetime:
     """Returns current date & time."""
     return datetime.now()
 
