@@ -1,12 +1,12 @@
-from typing import Any
-
 from langchain_community.utilities import GoogleSerperAPIWrapper
 from langchain_community.document_loaders import FireCrawlLoader
-from langchain.tools import tool
+from langchain_core.documents import Document
+from langchain.tools import tool, ToolRuntime
 from langchain.agents import create_agent
 
 from app.util.config import config
 from app.agents.core.llm_factory import get_llm
+from app.models.agent import WorkflowContext
 
 RESEARCH_PROMPT = (
     "You are a researcher capable of searching for documents online."
@@ -27,18 +27,19 @@ RESEARCH_PROMPT = (
 
 @tool("web_search_serp",
       description="Use this tool to search for GHG factors online.")
-def serp_tool(country_code:str, year:str) -> list[str]:
+def serp_tool(country_code:str, year:str) -> str:
     """Search online based on input parameters."""
     search = GoogleSerperAPIWrapper(gl=f"{country_code.lower()}",
                                          serper_api_key=config.SERPER_API_KEY)
-    # search = GoogleSerperResults(api_wrapper=api_wrapper)
+    
     results = search.results(f"Find GHG conversion factors data for {country_code} in the year {year}")
     urls = [item["link"] for item in results["organic"]]
-    return urls
+
+    return urls[0]
 
 @tool("crawl_page",
       description="Use this tool to crawl the provided page contents as markdown.")
-def crawler_tool(url:str) -> list[Any]:
+def crawler_tool(url:str) -> list[Document]:
     """Get page contents as markdown"""
     loader = FireCrawlLoader(api_key=config.FIRECRAWL_API_KEY,
                              url=url,
@@ -48,5 +49,6 @@ def crawler_tool(url:str) -> list[Any]:
 
 researcher = create_agent(name="Researcher",
                           model=get_llm(),
+                          context_schema=WorkflowContext,
                           tools=[serp_tool, crawler_tool],
                           system_prompt=RESEARCH_PROMPT)

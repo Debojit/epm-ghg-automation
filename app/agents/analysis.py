@@ -4,7 +4,7 @@ from langchain.agents import create_agent
 from langchain.tools import tool
 
 from app.agents.core.llm_factory import get_llm
-from app.models.agent import PromptAnalysis
+from app.models.agent import PromptAnalysis, WorkflowContext
 
 ANALYSER_PROMPT = (
     "You are a prompt analysis assistant."
@@ -22,6 +22,7 @@ def get_current_date() -> str:
 
 analyser = create_agent(name="Prompt Analyser",
                         model=get_llm(),
+                        context_schema=WorkflowContext,
                         tools=[get_current_date],
                         response_format=PromptAnalysis,
                         system_prompt=ANALYSER_PROMPT)
