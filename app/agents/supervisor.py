@@ -1,11 +1,12 @@
-from langchain.tools import tool
+from langchain.tools import tool, ToolRuntime
 from langchain.agents import create_agent
+from langchain.messages import HumanMessage
 
-from app.util.config import config
-from app.models.agent import PromptAnalysis
+from app.models.agent import PromptAnalysis, WorkflowContext
 from app.agents.core.llm_factory import get_llm
 from app.agents.analysis import analyser
 from app.agents.research import researcher
+from app.util.logging import get_logger
 
 SUPERVISOR_PROMPT = (
     "You are a supervisor with a team of agents exposed as tools."
@@ -18,35 +19,41 @@ SUPERVISOR_PROMPT = (
     "Return final response received from tool as-is without any additional explanation or other text."
 )
 
+logger = get_logger(__name__)
+
 @tool("prompt_analysis",
       description="Use this tool to call an agent that analyses user input prompt.")
-def prompt_analysis(user_prompt:str) -> PromptAnalysis:
+def prompt_analysis(user_prompt:str, runtime:ToolRuntime[WorkflowContext]) -> PromptAnalysis:
     """Analyses input prompt and extracts country code and year."""
-    result = analyser.invoke({
-            "messages": [
-                {
-                    "role": "user",
-                    "content": user_prompt
-                }
-            ]
-        })
-    return result["structured_response"]
+    logger.info(f"Analysing user prompt:'{user_prompt}'")
+
+    result = analyser.invoke({"messages": [HumanMessage(user_prompt)]},
+            context=runtime.context)
+    
+    analysis:PromptAnalysis = result["structured_response"]
+    runtime.context.country_code = analysis.country_code
+    runtime.context.year = analysis.year
+    
+    logger.info(f"Found Country Code:{analysis.country_code}, Year:{analysis.year}")
+    return analysis
 
 @tool("research",
       description="Use this tool to call an agent that searches online for GHG conversion factor download links.")
-def research(country_code:str, year:str) -> str:
+def research(runtime:ToolRuntime[WorkflowContext]) -> str:
     """Finds GHG conversion factors data download links online."""
+    logger.info(f"Looking for GHG conversions factor document for {runtime.context.country_code} in {runtime.context.year}.")
+    
     result = researcher.invoke({
-            "messages": [
-                {
-                    "role": "user",
-                    "content": PromptAnalysis(CountryCode=country_code, Year=year).model_dump_json()
-                }
-            ]
-    })
-    return result["messages"][-1].content
+            "messages": [HumanMessage(f"Country Code:{runtime.context.country_code}, Year:{runtime.context.year}")]},
+            context=runtime.context)
+    doc_url = result["messages"][-1].content
+    runtime.context.doc_url = doc_url
+
+    logger.info(f"Found document URL: {doc_url}")
+    return doc_url
 
 supervisor = create_agent(name="Supervisor",
                         model=get_llm(),
+                        context_schema=WorkflowContext,
                         tools=[prompt_analysis, research],
                         system_prompt=SUPERVISOR_PROMPT)
