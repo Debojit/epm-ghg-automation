@@ -19,3 +19,6 @@ class WorkflowContext(BaseModel):
     doc_url:str = Field(alias="DocUrl",
                         description="Download URL for the GHG conversions factor document.",
                         default="")
+    local_file_path:str = Field(alias="LocalFilePath",
+                                description="Absolute local path to the file stored locally.",
+                                default="")

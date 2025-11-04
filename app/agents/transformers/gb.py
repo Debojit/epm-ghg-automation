@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pandas as pd
  
@@ -34,7 +35,7 @@ _transformer = create_agent(name="UK Data Transformer",
                               model=get_llm(),
                               system_prompt=PROMPT)
 
-def transform_gb(file_path:str) -> list[ConversionFactor]:
+def transform_gb(file_path:Path) -> list[ConversionFactor]:
     ghg_df = pd.read_excel(file_path, sheet_name="Passenger vehicles")
     result = _transformer.invoke({"messages": [HumanMessage(ghg_df.to_csv())]})
     raw_data:str = result["messages"][-1].content
@@ -46,7 +47,6 @@ def transform_gb(file_path:str) -> list[ConversionFactor]:
                     KgCo2eOfCh4=record["kg CO2e of CH4 per unit"],
                     KgCo2eOfN2o=record["kg CO2e of N2O per unit"])
                 for record in ghg_json]
-    
     return ghg_data
 
 registry.register("gb", transform_gb)

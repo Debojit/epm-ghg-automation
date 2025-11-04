@@ -18,7 +18,7 @@ def test_valid_input():
     user_message = HumanMessage(user_prompt)
     context = WorkflowContext(UserPrompt=user_prompt)
     result = _invoke_agent(user_message, context)
-    assert result["messages"][-1] not in (None, "")
+    assert len(result["messages"][-1].content) != 0
 
 def test_invalid_country():
     """
