@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
- 
+
 from langchain.agents import create_agent
 from langchain.messages import HumanMessage
 
@@ -31,22 +31,28 @@ PROMPT = (
     "Do not include any explanations, markdown, or text outside the JSON array."
 )
 
-_transformer = create_agent(name="UK Data Transformer",
-                              model=get_llm(),
-                              system_prompt=PROMPT)
+_transformer = create_agent(
+    name="UK Data Transformer", model=get_llm(), system_prompt=PROMPT
+)
 
-def transform_gb(file_path:Path) -> list[ConversionFactor]:
+
+def transform_gb(file_path: Path) -> list[ConversionFactor]:
     ghg_df = pd.read_excel(file_path, sheet_name="Passenger vehicles")
     result = _transformer.invoke({"messages": [HumanMessage(ghg_df.to_csv())]})
-    raw_data:str = result["messages"][-1].content
+    raw_data: str = result["messages"][-1].content
     clean_data = raw_data.replace("```json", "").replace("```", "")
     ghg_json = json.loads(clean_data)
-    ghg_data = [ConversionFactor(CarType=record["Type"],
-                    KgCo2e=record["kg CO2e"],
-                    KgCo2eOfCo2=record["kg CO2e of CO2 per unit"],
-                    KgCo2eOfCh4=record["kg CO2e of CH4 per unit"],
-                    KgCo2eOfN2o=record["kg CO2e of N2O per unit"])
-                for record in ghg_json]
+    ghg_data = [
+        ConversionFactor(
+            CarType=record["Type"],
+            KgCo2e=record["kg CO2e"],
+            KgCo2eOfCo2=record["kg CO2e of CO2 per unit"],
+            KgCo2eOfCh4=record["kg CO2e of CH4 per unit"],
+            KgCo2eOfN2o=record["kg CO2e of N2O per unit"],
+        )
+        for record in ghg_json
+    ]
     return ghg_data
+
 
 registry.register("gb", transform_gb)

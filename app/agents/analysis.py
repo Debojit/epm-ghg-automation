@@ -14,15 +14,21 @@ ANALYSER_PROMPT = (
     "Convert the year to YYYY format if needed."
 )
 
-@tool("current_datetime",
-      description="Use this tool to get the current date in YYYY-MM-DD format.")
+
+@tool(
+    "current_datetime",
+    description="Use this tool to get the current date in YYYY-MM-DD format.",
+)
 def get_current_date() -> str:
     """Returns current date & time."""
     return datetime.now().strftime("%Y-%m-%d")
 
-analyser = create_agent(name="Prompt Analyser",
-                        model=get_llm(),
-                        context_schema=WorkflowContext,
-                        tools=[get_current_date],
-                        response_format=PromptAnalysis,
-                        system_prompt=ANALYSER_PROMPT)
+
+analyser = create_agent(
+    name="Prompt Analyser",
+    model=get_llm(),
+    context_schema=WorkflowContext,
+    tools=[get_current_date],
+    response_format=PromptAnalysis,
+    system_prompt=ANALYSER_PROMPT,
+)

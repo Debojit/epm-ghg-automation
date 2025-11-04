@@ -25,56 +25,91 @@ SUPERVISOR_PROMPT = (
 
 logger = get_logger(__name__)
 
-@tool("prompt_analysis",
-      description="Use this tool to call an agent that analyses user input prompt.")
-def prompt_analysis(user_prompt:str, runtime:ToolRuntime[WorkflowContext]) -> PromptAnalysis:
+
+@tool(
+    "prompt_analysis",
+    description="Use this tool to call an agent that analyses user input prompt.",
+)
+def prompt_analysis(
+    user_prompt: str, runtime: ToolRuntime[WorkflowContext]
+) -> PromptAnalysis:
     """Analyses input prompt and extracts country code and year."""
     logger.info(f"Analysing user prompt:'{user_prompt}'")
 
-    result = analyser.invoke({"messages": [HumanMessage(user_prompt)]},
-            context=runtime.context)
-    
-    analysis:PromptAnalysis = result["structured_response"]
+    result = analyser.invoke(
+        {"messages": [HumanMessage(user_prompt)]}, context=runtime.context
+    )
+
+    analysis: PromptAnalysis = result["structured_response"]
     runtime.context.country_code = analysis.country_code
     runtime.context.year = analysis.year
-    
+
     logger.info(f"Found Country Code:{analysis.country_code}, Year:{analysis.year}")
     return analysis
 
-@tool("research",
-      description="Use this tool to call an agent that searches online for GHG conversion factor download links.")
-def research(runtime:ToolRuntime[WorkflowContext]) -> str:
+
+@tool(
+    "research",
+    description="Use this tool to call an agent that searches online for GHG conversion factor download links.",
+)
+def research(runtime: ToolRuntime[WorkflowContext]) -> str:
     """Finds GHG conversion factors data download links online."""
-    logger.info(f"Looking for GHG conversions factor document for {runtime.context.country_code} in {runtime.context.year}.")
-    
-    result = researcher.invoke({
-            "messages": [HumanMessage(f"Country Code:{runtime.context.country_code}, Year:{runtime.context.year}")]},
-            context=runtime.context)
+    logger.info(
+        f"Looking for GHG conversions factor document for {runtime.context.country_code} in {runtime.context.year}."
+    )
+
+    result = researcher.invoke(
+        {
+            "messages": [
+                HumanMessage(
+                    f"Country Code:{runtime.context.country_code}, Year:{runtime.context.year}"
+                )
+            ]
+        },
+        context=runtime.context,
+    )
     doc_url = result["messages"][-1].content
     runtime.context.doc_url = doc_url
 
     logger.info(f"Found document URL: {doc_url}")
     return doc_url
 
-@tool("acquisition",
-      description="Use this tool to download and transform country-specific GHG conversion factors data into a normalised format.")
-def acquisition(runtime:ToolRuntime[WorkflowContext]) -> list[ConversionFactor]:
-    """Downloads and transforms GHG conversion factors data."""
-    logger.info(f"Attempting to extract data from document at {runtime.context.doc_url}.")
 
-    result = acquirer.invoke({"messages": [HumanMessage(f"Download and normalise the data for the document located at {runtime.context.doc_url}.")]})
-    ghg_data:list[ConversionFactor] = result["messages"][-1].content
+@tool(
+    "acquisition",
+    description="Use this tool to download and transform country-specific GHG conversion factors data into a normalised format.",
+)
+def acquisition(runtime: ToolRuntime[WorkflowContext]) -> list[ConversionFactor]:
+    """Downloads and transforms GHG conversion factors data."""
+    logger.info(
+        f"Attempting to extract data from document at {runtime.context.doc_url}."
+    )
+
+    result = acquirer.invoke(
+        {
+            "messages": [
+                HumanMessage(
+                    f"Download and normalise the data for the document located at {runtime.context.doc_url}."
+                )
+            ]
+        }
+    )
+    ghg_data: list[ConversionFactor] = result["messages"][-1].content
 
     return ghg_data
 
-@tool("data_load",
-      description="Use this tool to load normlaised data into Oracle EPM.")
-def data_load(ghg_data:list[ConversionFactor]):
+
+@tool("data_load", description="Use this tool to load normlaised data into Oracle EPM.")
+def data_load(ghg_data: list[ConversionFactor]):
     import pprint
+
     pprint.pp(ghg_data, indent=4, width=100)
 
-supervisor = create_agent(name="Supervisor",
-                        model=get_llm(),
-                        context_schema=WorkflowContext,
-                        tools=[prompt_analysis, research, acquisition, data_load],
-                        system_prompt=SUPERVISOR_PROMPT)
+
+supervisor = create_agent(
+    name="Supervisor",
+    model=get_llm(),
+    context_schema=WorkflowContext,
+    tools=[prompt_analysis, research, acquisition, data_load],
+    system_prompt=SUPERVISOR_PROMPT,
+)

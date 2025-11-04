@@ -21,6 +21,7 @@ ACQUISITION_PROMPT = (
     "Return the transformed data."
 )
 
+
 def _download_file(url: str) -> Path:
     """Download a remote file based on URL input."""
     local_file_path = Path("/tmp") / f"{uuid.uuid4()}_{Path(url).name}"
@@ -33,23 +34,26 @@ def _download_file(url: str) -> Path:
             os.fsync(f.fileno())
     return local_file_path
 
-def _transform_data(country_code:str, local_file_path:Path) -> list[ConversionFactor]:
+
+def _transform_data(country_code: str, local_file_path: Path) -> list[ConversionFactor]:
     """Convert country-specific file data into normalised form."""
     transformer = registry.get(country_code.lower())
     ghg_data = transformer(local_file_path)
     os.remove(local_file_path)
     return ghg_data
 
+
 @tool(
     "acquire_data",
-    description="Use this tool to download and transform the GHG conversion factors data."
+    description="Use this tool to download and transform the GHG conversion factors data.",
 )
-def acquire_data(runtime:ToolRuntime[WorkflowContext]) -> list[ConversionFactor]:
+def acquire_data(runtime: ToolRuntime[WorkflowContext]) -> list[ConversionFactor]:
     """Acquire and transform GHG conversion factors data."""
     local_file_path = _download_file(runtime.context.doc_url)
     ghg_data = _transform_data(runtime.context.country_code, local_file_path)
 
     return ghg_data
+
 
 acquirer = create_agent(
     name="Data Acquirer",

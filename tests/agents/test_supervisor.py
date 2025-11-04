@@ -5,6 +5,7 @@ from langchain.messages import HumanMessage
 from app.agents.supervisor import supervisor
 from app.models.agent import WorkflowContext
 
+
 def test_valid_input():
     """
     Test if the agent workflow is performing normally with valid inputs.
@@ -19,6 +20,7 @@ def test_valid_input():
     context = WorkflowContext(UserPrompt=user_prompt)
     result = _invoke_agent(user_message, context)
     assert len(result["messages"][-1].content) != 0
+
 
 def test_invalid_country():
     """
@@ -35,6 +37,7 @@ def test_invalid_country():
     result = _invoke_agent(user_message, context)
     assert result["messages"][-1].content == "Invalid Inputs."
 
+
 def test_invalid_year():
     """
     Test if the agent workflow is performing normally with valid inputs.
@@ -50,6 +53,6 @@ def test_invalid_year():
     result = _invoke_agent(user_message, context)
     assert result["messages"][-1].content == "Invalid Inputs."
 
-def _invoke_agent(message:HumanMessage, context:WorkflowContext) -> dict[str, Any]:
-    return supervisor.invoke({"messages": [message]},
-                             context=context)
+
+def _invoke_agent(message: HumanMessage, context: WorkflowContext) -> dict[str, Any]:
+    return supervisor.invoke({"messages": [message]}, context=context)

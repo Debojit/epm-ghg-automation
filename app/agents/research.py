@@ -25,30 +25,36 @@ RESEARCH_PROMPT = (
     "   - Just return the results; don't return any extra text."
 )
 
-@tool("web_search_serp",
-      description="Use this tool to search for GHG factors online.")
-def serp_tool(country_code:str, year:str) -> str:
+
+@tool("web_search_serp", description="Use this tool to search for GHG factors online.")
+def serp_tool(country_code: str, year: str) -> str:
     """Search online based on input parameters."""
-    search = GoogleSerperAPIWrapper(gl=f"{country_code.lower()}",
-                                         serper_api_key=config.SERPER_API_KEY)
-    
-    results = search.results(f"Find GHG conversion factors data for {country_code} in the year {year}")
+    search = GoogleSerperAPIWrapper(
+        gl=f"{country_code.lower()}", serper_api_key=config.SERPER_API_KEY
+    )
+
+    results = search.results(
+        f"Find GHG conversion factors data for {country_code} in the year {year}"
+    )
     urls = [item["link"] for item in results["organic"]]
 
     return urls[0]
 
-@tool("crawl_page",
-      description="Use this tool to crawl the provided page contents as markdown.")
-def crawler_tool(url:str) -> list[Document]:
+
+@tool(
+    "crawl_page",
+    description="Use this tool to crawl the provided page contents as markdown.",
+)
+def crawler_tool(url: str) -> list[Document]:
     """Get page contents as markdown"""
-    loader = FireCrawlLoader(api_key=config.FIRECRAWL_API_KEY,
-                             url=url,
-                             mode="scrape"
-    )
+    loader = FireCrawlLoader(api_key=config.FIRECRAWL_API_KEY, url=url, mode="scrape")
     return loader.load()
 
-researcher = create_agent(name="Researcher",
-                          model=get_llm(),
-                          context_schema=WorkflowContext,
-                          tools=[serp_tool, crawler_tool],
-                          system_prompt=RESEARCH_PROMPT)
+
+researcher = create_agent(
+    name="Researcher",
+    model=get_llm(),
+    context_schema=WorkflowContext,
+    tools=[serp_tool, crawler_tool],
+    system_prompt=RESEARCH_PROMPT,
+)
