@@ -10,6 +10,3 @@ def test_gb_transformer_valid_input():
 
     assert ghg_data is not None
     assert len(ghg_data) is not 0
-    import pprint
-    print("\n")
-    pprint.pp(ghg_data)
